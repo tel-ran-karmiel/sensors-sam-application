@@ -1,11 +1,11 @@
 # Task Definition
-## Fill file app.mjs for avg-sensor-data
-### Compute average values for sensors
-1. Consider object with fields-sensors data<br>
-1.1 Key - sensorId, value - array of comming values
-2. Once amount of values for a sensorId equals env variable REDUCING_SIZE, compute average value for the sensorId and publish (sensorId, avg-value, current timestamp) to topic with arn as value of appropriate env variable
-## Fill file app.mjs for avg-data-processor
-1. for each comming message print (console.log) the following:<br>
-- sensorId <br>
-- avg value <br> 
-- time in any format of date/time converted from timestamp with time zone from env variable TZ
+## Fill file app.mjs for abnormal-sensor-data
+### Introduce config object the same as in imitator for normal values
+### If the coming value less than minimal value
+send to topic for low values an JSON containing sensorId, value, minValue, timestamp 
+### If the coming value greater than maximal value 
+send to topic for high values an JSON containing sensorId, value, maxValue, timestamp
+### Fill file app.mjs for high-data-processor
+printing coming data as sensorId, value, maxValue, date-time received from timestamp
+### Fill file app.mjs for low-data-processor
+printing coming data as sensorId, value, minValue, date-time received from timestamp

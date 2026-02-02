@@ -10,6 +10,8 @@ Globals:
   Function:
     Timeout: 30
     Runtime: nodejs22.x
+    Layers:
+      - !Ref PinoLoggerLayer
     Architectures:
       - x86_64
 
@@ -17,6 +19,7 @@ Parameters:
   IngestStreamTopicArn:
     Type: String
     Description: ARN of the ingest stream SNS topic
+    Default: arn:aws:sns:us-east-1:212712010886:sensors-data-ingest
 
 Resources:
   # Lambda Layer for Pino Logger
@@ -25,7 +28,7 @@ Resources:
     Properties:
       LayerName: pino-logger-layer-abnormal
       Description: Pino logger configuration layer
-      ContentUri: layers/pino-logger/
+      ContentUri: ../layers/pino-logger/
       CompatibleRuntimes:
         - nodejs22.x
 
@@ -49,8 +52,6 @@ Resources:
       FunctionName: abnormal-sensor-data
       CodeUri: abnormal-sensor-data/
       Handler: app.lambdaHandler
-      Layers:
-        - !Ref PinoLoggerLayer
       Events:
         IngestStreamSubscription:
           Type: SNS
@@ -73,8 +74,6 @@ Resources:
       FunctionName: low-data-processor
       CodeUri: low-data-processor/
       Handler: app.lambdaHandler
-      Layers:
-        - !Ref PinoLoggerLayer
       Events:
         LowSensorDataSubscription:
           Type: SNS
@@ -88,8 +87,6 @@ Resources:
       FunctionName: high-data-processor
       CodeUri: high-data-processor/
       Handler: app.lambdaHandler
-      Layers:
-        - !Ref PinoLoggerLayer
       Events:
         HighSensorDataSubscription:
           Type: SNS

@@ -16,12 +16,13 @@ Globals:
       - x86_64
     Environment:
         Variables:
-          LOGGER_LEVEL: DEBUG
+          LOGGER_LEVEL: debug
           TZ: Asia/Jerusalem
 Parameters:
   IngestStreamTopicArn:
     Type: String
     Description: ARN of the ingest stream SNS topic
+    Default: arn:aws:sns:us-east-1:212712010886:sensors-data-ingest
 
 Resources:
   # Lambda Layer for Pino Logger
@@ -30,7 +31,7 @@ Resources:
     Properties:
       LayerName: pino-logger-layer-average
       Description: Pino logger configuration layer
-      ContentUri: layers/pino-logger/
+      ContentUri: ../layers/pino-logger/
       CompatibleRuntimes:
         - nodejs22.x
 
@@ -77,6 +78,9 @@ Resources:
             Topic: !Ref AvgSensorValuesTopic
 
 Outputs:
+  PinoLoggerLayerArn:
+    Description: "ARN of shared Pino Logger Lambda Layer"
+    Value: !Ref PinoLoggerLayer
   AvgSensorValuesTopicArn:
     Description: "ARN of Average Sensor Values SNS Topic"
     Value: !Ref AvgSensorValuesTopic
