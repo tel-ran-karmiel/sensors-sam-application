@@ -1,8 +1,6 @@
 # Task Definition
-## Update code for avg-sensor-data lambda function
-### Instead of object sensorsHistory (stateful function) introduce DynamoDB (stateless function)
-consider table with PK as "sensorId", no SK, sum-value, count<br>
-consider DynamoDB client commands GetCommand, PutCommand, UpdateCommand, DeleteCommand
-## Update template file 
-add resource for creating Dynamodb table intended for finding average values
-add permissions for Dynamodb full access (write & read) in the role of avg-sensor-data lambda
+## Update working code of abnormal-sensor-data lambda function
+1. Design and implement stale cache functionality <br>
+2. Think of a solution allowing request for the specific sensor data by two conditions<br>
+2.1 If no data exist in the cache for the specific sensor<br>
+2.2 If time from inserting the specific sensor min/max values into cache <br>(SENSORS_NORMAL_VALUES object) exceeds time period in seconds value at environment variable STALE_TIME 
