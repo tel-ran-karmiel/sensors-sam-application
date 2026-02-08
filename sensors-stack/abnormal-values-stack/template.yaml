@@ -66,6 +66,7 @@ Resources:
           LOW_SENSOR_DATA_TOPIC_ARN: !Ref LowSensorDataTopic
           HIGH_SENSOR_DATA_TOPIC_ARN: !Ref HighSensorDataTopic
           SENSOR_DATA_PROVIDER_FUNCTION_NAME: !Ref SensorDataProviderFunction
+          STALE_TIME: 1
       Policies:
         - SNSPublishMessagePolicy:
             TopicName: !GetAtt LowSensorDataTopic.TopicName

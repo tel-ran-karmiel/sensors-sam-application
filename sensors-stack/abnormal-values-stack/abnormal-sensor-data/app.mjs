@@ -12,14 +12,13 @@ import { publish } from "/opt/nodejs/publisher.mjs";
 import {InvokeCommand, LambdaClient} from "@aws-sdk/client-lambda"
 const ENV_TOPIC_LOW = "LOW_SENSOR_DATA_TOPIC_ARN";
 const ENV_TOPIC_HIGH = "HIGH_SENSOR_DATA_TOPIC_ARN";
-const ENV_LAMBDA = "SENSOR_DATA_PROVIDER_FUNCTION_NAME"
-const SENSORS_NORMAL_VALUES = {
- 
-};
+const ENV_LAMBDA = "SENSOR_DATA_PROVIDER_FUNCTION_NAME";
+const staleTime = parseInt(process.env["STALE_TIME"] || "1_000_000_000")
+const cache = {};
 const lambdaClient = new LambdaClient({})
 export const lambdaHandler = async (event, __) => {
   try {
-    logger.debug(`cache is ${JSON.stringify(SENSORS_NORMAL_VALUES)}`)
+    logger.debug(`cache is ${JSON.stringify(cache)}`)
     const topicArnLow = process.env[ENV_TOPIC_LOW];
     if (!topicArnLow)
       throw new Error("missing env. variable for low values topic arn");
@@ -46,10 +45,12 @@ async function processRecord(record, topicArnLow, topicArnHigh, FunctionName) {
   logger.debug(`message from SNS record is ${messageJSON}`);
   const data = JSON.parse(messageJSON)
   const {sensorId, value, timestamp} = data
-  logger.debug(`cache contains value for sensor ${sensorId} that is ${SENSORS_NORMAL_VALUES[sensorId]}`)
-  const minValue = SENSORS_NORMAL_VALUES[sensorId] ?
-   SENSORS_NORMAL_VALUES[sensorId][0] : await getValuesFromInvocation(sensorId, FunctionName);
-  const maxValue = SENSORS_NORMAL_VALUES[sensorId][1]
+  logger.debug(`cache contains value for sensor ${sensorId} that is ${cache[sensorId]}`)
+  if (shouldInvoke(sensorId)) {
+      await updateCache(sensorId,FunctionName)
+  }
+  const minValue = cache[sensorId][0]
+  const maxValue = cache[sensorId][1]
   logger.debug(`for sensor ${sensorId} minValue=${minValue} maxValue=${maxValue}`)
 
   if (value < minValue) {
@@ -59,7 +60,18 @@ async function processRecord(record, topicArnLow, topicArnHigh, FunctionName) {
   }
 
 }
-async function getValuesFromInvocation(sensorId,  FunctionName){
+function shouldInvoke(sensorId) {
+  const values = cache[sensorId]
+  let isStaled = false;
+  if (!values) {
+    logger.debug(`sensor ${sensorId} doesn't have values in the cache`)
+  } else if (Date.now() / 1000 - values[2] > staleTime) {
+    isStaled = true;
+    logger.debug(`values for sensor ${sensorId} are staled`)
+  }
+  return !values || isStaled
+}
+async function updateCache(sensorId,  FunctionName){
     logger.debug(` ${FunctionName} to be invoked` )
     const command = new InvokeCommand({
       FunctionName,
@@ -69,14 +81,13 @@ async function getValuesFromInvocation(sensorId,  FunctionName){
       }))
     })
     const response = await lambdaClient.send(command)
-    const minValue =  processResponseFromLambda(response)
-    logger.debug(`returned minimal value of sensor ${sensorId} is ${minValue}`)
-    logger.debug(`object SENSORS_NORMAL_VALUES for sensor ${sensorId} contains ${SENSORS_NORMAL_VALUES[sensorId]} values`)
-    return minValue
+    processResponseFromLambda(response)
+    logger.debug(`object cache for sensor ${sensorId} contains ${cache[sensorId]} values`)
 }
 function processResponseFromLambda(response) {
     const respObj = JSON.parse(Buffer.from(response.Payload).toString("utf-8"))
-    SENSORS_NORMAL_VALUES[respObj.sensorId] = respObj.values
-    return respObj.values[0]
+    const values = respObj.values;
+    values.push(Math.trunc(Date.now() / 1000));
+    cache[respObj.sensorId] = values;
 
 }
